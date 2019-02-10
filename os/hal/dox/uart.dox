@@ -1,21 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -81,13 +77,11 @@
     tx_idle [label="TX_IDLE", style="bold"];
     tx_active [label="TX_ACTIVE"];
     tx_complete [label="TX_COMPLETE"];
-    tx_fatal [label="Fatal Error", style="bold"];
 
     tx_idle -> tx_active [label="\nuartStartSend()"];
-    tx_idle -> tx_idle [label="\nuartStopSend()\n>uc_txend2<"];
-    tx_active -> tx_complete [label="\nbuffer transmitted\n>uc_txend1<"];
+    tx_idle -> tx_idle [label="\nuartStopSend()\n>txend2_cb<"];
+    tx_active -> tx_complete [label="\nbuffer transmitted\n>txend1_cb<"];
     tx_active -> tx_idle [label="\nuartStopSend()"];
-    tx_active -> tx_fatal [label="\nuartStartSend()"];
     tx_complete -> tx_active [label="\nuartStartSendI()\nthen\ncallback return"];
     tx_complete -> tx_idle [label="\ncallback return"];
   }
@@ -107,19 +101,17 @@
     rx_idle [label="RX_IDLE", style="bold"];
     rx_active [label="RX_ACTIVE"];
     rx_complete [label="RX_COMPLETE"];
-    rx_fatal [label="Fatal Error", style="bold"];
 
-    rx_idle -> rx_idle [label="\nuartStopReceive()\n>uc_rxchar<\n>uc_rxerr<"];
+    rx_idle -> rx_idle [label="\nuartStopReceive()\n>rxchar_cb<\n>rxerr_cb<"];
     rx_idle -> rx_active [label="\nuartStartReceive()"];
 
-    rx_active -> rx_complete [label="\nbuffer filled\n>uc_rxend<"];
+    rx_active -> rx_complete [label="\nbuffer filled\n>rxend_cb<"];
     rx_active -> rx_idle [label="\nuartStopReceive()"];
-    rx_active -> rx_active [label="\nreceive error\n>uc_rxerr<"];
-    rx_active -> rx_fatal [label="\nuartStartReceive()"];
-    rx_complete -> rx_active [label="\nuartStartReceiveI()\nthen\ncallback return"];
+    rx_active -> rx_active [label="\nreceive error\n>rxerr_cb<"];
+    rx_complete -> rx_active [label="\nuartStartReceiveI()"];
     rx_complete -> rx_idle [label="\ncallback return"];
   }
  * @enddot
  *
- * @ingroup IO
+ * @ingroup HAL_NORMAL_DRIVERS
  */

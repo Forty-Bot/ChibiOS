@@ -1,51 +1,47 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /*------------------------------------------------------------------------*/
-/* Sample code of OS dependent controls for FatFs R0.08b                  */
-/* (C)ChaN, 2011                                                          */
+/* Sample code of OS dependent controls for FatFs                         */
+/* (C)ChaN, 2014                                                          */
 /*------------------------------------------------------------------------*/
 
-#include "ch.h"
+#include "hal.h"
 #include "ff.h"
 
-#if _FS_REENTRANT
+#if FF_FS_REENTRANT
 /*------------------------------------------------------------------------*/
 /* Static array of Synchronization Objects                                */
 /*------------------------------------------------------------------------*/
-static Semaphore ff_sem[_VOLUMES];
+static semaphore_t ff_sem[FF_VOLUMES];
 
 /*------------------------------------------------------------------------*/
 /* Create a Synchronization Object                                        */
 /*------------------------------------------------------------------------*/
-int ff_cre_syncobj(BYTE vol, _SYNC_t *sobj) {
+int ff_cre_syncobj(BYTE vol, FF_SYNC_t *sobj) {
 
   *sobj = &ff_sem[vol];
-  chSemInit(*sobj, 1);
+  chSemObjectInit(*sobj, 1);
   return TRUE;
 }
 
 /*------------------------------------------------------------------------*/
 /* Delete a Synchronization Object                                        */
 /*------------------------------------------------------------------------*/
-int ff_del_syncobj(_SYNC_t sobj) {
+int ff_del_syncobj(FF_SYNC_t sobj) {
 
   chSemReset(sobj, 0);
   return TRUE;
@@ -54,22 +50,22 @@ int ff_del_syncobj(_SYNC_t sobj) {
 /*------------------------------------------------------------------------*/
 /* Request Grant to Access the Volume                                     */
 /*------------------------------------------------------------------------*/
-int ff_req_grant(_SYNC_t sobj) {
+int ff_req_grant(FF_SYNC_t sobj) {
 
-  msg_t msg = chSemWaitTimeout(sobj, (systime_t)_FS_TIMEOUT);
-  return msg == RDY_OK;
+  msg_t msg = chSemWaitTimeout(sobj, (systime_t)FF_FS_TIMEOUT);
+  return msg == MSG_OK;
 }
 
 /*------------------------------------------------------------------------*/
 /* Release Grant to Access the Volume                                     */
 /*------------------------------------------------------------------------*/
-void ff_rel_grant(_SYNC_t sobj) {
+void ff_rel_grant(FF_SYNC_t sobj) {
 
   chSemSignal(sobj);
 }
-#endif /* _FS_REENTRANT */
+#endif /* FF_FS_REENTRANT */
 
-#if _USE_LFN == 3	/* LFN with a working buffer on the heap */
+#if FF_USE_LFN == 3	/* LFN with a working buffer on the heap */
 /*------------------------------------------------------------------------*/
 /* Allocate a memory block                                                */
 /*------------------------------------------------------------------------*/
@@ -85,4 +81,4 @@ void ff_memfree(void *mblock) {
 
   chHeapFree(mblock);
 }
-#endif /* _USE_LFN == 3 */
+#endif /* FF_USE_LFN == 3 */

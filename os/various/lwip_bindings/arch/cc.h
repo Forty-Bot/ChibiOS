@@ -1,21 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 /*
  * **** This file incorporates work covered by the following copyright and ****
@@ -55,22 +51,39 @@
 #ifndef __CC_H__
 #define __CC_H__
 
-#include <ch.h>
+#include <hal.h>
 
-typedef uint8_t         u8_t;
-typedef int8_t          s8_t;
-typedef uint16_t        u16_t;
-typedef int16_t         s16_t;
-typedef uint32_t        u32_t;
-typedef int32_t         s32_t;
-typedef uint32_t        mem_ptr_t;
+/* Use errno provided by system. */
+#define LWIP_ERRNO_INCLUDE <errno.h>
 
+/**
+ * @brief   Use system provided struct timeval by default.
+ */
+#ifndef LWIP_TIMEVAL_PRIVATE
+#define LWIP_TIMEVAL_PRIVATE        0
+#include <sys/time.h>
+#endif
+
+/**
+ * @brief   Use a no-op diagnostic output macro by default.
+ */
+#if !defined(LWIP_PLATFORM_DIAG)
 #define LWIP_PLATFORM_DIAG(x)
-#define LWIP_PLATFORM_ASSERT(x) {                                       \
-  chSysHalt();                                                          \
-}
+#endif
 
-#define BYTE_ORDER LITTLE_ENDIAN
-#define LWIP_PROVIDE_ERRNO
+/**
+ * @brief   Halt the system on lwIP assert failure by default.
+ */
+#if !defined(LWIP_PLATFORM_ASSERT)
+#define LWIP_PLATFORM_ASSERT(x)     osalSysHalt(x)
+#endif
+
+/**
+ * @brief   The NETIF API is required by lwipthread.
+ */
+#ifdef LWIP_NETIF_API
+#undef LWIP_NETIF_API
+#endif
+#define LWIP_NETIF_API              1
 
 #endif /* __CC_H__ */
