@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer 
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -mfpu=vfp -mfloat-abi=hard
 endif
 
 # C specific options here (added to USE_OPT).
@@ -23,6 +23,16 @@ ifeq ($(USE_LINK_GC),)
   USE_LINK_GC = yes
 endif
 
+# Linker extra options here.
+ifeq ($(USE_LDOPT),)
+  USE_LDOPT = 
+endif
+
+# Enable this if you want link time optimizations (LTO)
+ifeq ($(USE_LTO),)
+  USE_LTO = yes
+endif
+
 # If enabled, this option allows to compile the application in THUMB mode.
 ifeq ($(USE_THUMB),)
   USE_THUMB = no
@@ -30,11 +40,66 @@ endif
 
 # Enable this if you want to see the full log while compiling.
 ifeq ($(USE_VERBOSE_COMPILE),)
-  USE_VERBOSE_COMPILE = no
+  USE_VERBOSE_COMPILE = yes
+endif
+
+# If enabled, this option makes the build process faster by not compiling
+# modules not used in the current configuration.
+ifeq ($(USE_SMART_BUILD),)
+  USE_SMART_BUILD = yes
 endif
 
 #
 # Build global options
+##############################################################################
+
+##############################################################################
+# Architecture or project specific options
+#
+
+# Stack size to be allocated to the ARM System/User stack. This
+# stack is the stack used by the main() thread.
+ifeq ($(USE_SYSTEM_STACKSIZE),)
+  USE_SYSTEM_STACKSIZE = 0x400
+endif
+
+# Stack size to the allocated to the ARM IRQ stack. This
+# stack is used for processing interrupts and exceptions.
+ifeq ($(USE_EXCEPTIONS_STACKSIZE),)
+  USE_IRQ_STACKSIZE = 0x400
+endif
+
+# Stack size to the allocated to the ARM FIQ stack. This
+# stack is used for processing interrupts and exceptions.
+ifeq ($(USE_FIQ_STACKSIZE),)
+  USE_FIQ_STACKSIZE = 64
+endif
+
+# Stack size to the allocated to the ARM Supervisor stack. This
+# stack is used for processing interrupts and exceptions.
+ifeq ($(USE_SUPERVISOR_STACKSIZE),)
+  USE_SUPERVISOR_STACKSIZE = 8
+endif
+
+# Stack size to the allocated to the ARM Undefined stack. This
+# stack is used for processing interrupts and exceptions.
+ifeq ($(USE_UND_STACKSIZE),)
+  USE_UND_STACKSIZE = 8
+endif
+
+# Stack size to the allocated to the ARM Abort stack. This
+# stack is used for processing interrupts and exceptions.
+ifeq ($(USE_ABT_STACKSIZE),)
+  USE_ABT_STACKSIZE = 8
+endif
+
+# Enables the use of FPU.
+ifeq ($(USE_FPU),)
+  USE_FPU = no
+endif
+
+#
+# Architecture or project specific options
 ##############################################################################
 
 ##############################################################################
@@ -46,27 +111,37 @@ PROJECT = ch
 
 # Imported source files and paths
 CHIBIOS = ../..
-include $(CHIBIOS)/boards/RASPBERRYPI_MODB/board.mk
-include $(CHIBIOS)/os/hal/platforms/BCM2835/platform.mk
+# Startup files.
+include $(CHIBIOS)/os/common/startup/ARM/compilers/GCC/mk/startup_bcm2835.mk
+# HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/ports/GCC/ARM/BCM2835/port.mk
-include $(CHIBIOS)/os/kernel/kernel.mk
-include $(CHIBIOS)/test/test.mk
+include $(CHIBIOS)/os/hal/ports/BCM/BCM2835/platform.mk
+include $(CHIBIOS)/os/hal/boards/RASPBERRYPI_MODB/board.mk
+include $(CHIBIOS)/os/hal/osal/rt/osal.mk
+# RTOS files (optional).
+include $(CHIBIOS)/os/rt/rt.mk
+include $(CHIBIOS)/os/common/ports/ARM/compilers/GCC/mk/port_generic.mk
+# Other files (optional).
+include $(CHIBIOS)/test/lib/test.mk
+include $(CHIBIOS)/test/rt/rt_test.mk
+#include $(CHIBIOS)/test/oslib/oslib_test.mk
 
 # Define linker script file here
-LDSCRIPT= $(PORTLD)/BCM2835.ld
+LDSCRIPT= $(STARTUPLD)/BCM2835.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(PORTSRC) \
+CSRC = $(STARTUPSRC) \
        $(KERNSRC) \
-       $(TESTSRC) \
+       $(PORTSRC) \
+       $(OSALSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       ${CHIBIOS}/os/various/shell.c \
-       ${CHIBIOS}/os/various/chprintf.c \
+       $(TESTSRC) \
        main.c
+#       ${CHIBIOS}/os/various/shell/shell.c
+#       ${CHIBIOS}/os/various/chprintf.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -93,10 +168,12 @@ TCSRC =
 TCPPSRC =
 
 # List ASM source files here
-ASMSRC = $(PORTASM)
+ASMSRC =
+ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 
-INCDIR = $(PORTINC) $(KERNINC) $(TESTINC) \
-         $(HALINC) $(PLATFORMINC) $(BOARDINC) \
+INCDIR = $(CHIBIOS)/os/license \
+         $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
+         $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) \
          $(CHIBIOS)/os/various
 
 #
@@ -120,7 +197,9 @@ LD   = $(TRGT)gcc
 #LD   = $(TRGT)g++
 CP   = $(TRGT)objcopy
 AS   = $(TRGT)gcc -x assembler-with-cpp
+AR   = $(TRGT)ar
 OD   = $(TRGT)objdump
+SZ   = $(TRGT)size
 HEX  = $(CP) -O ihex
 BIN  = $(CP) -O binary
 
@@ -131,10 +210,10 @@ AOPT =
 TOPT = -mthumb -DTHUMB
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
 
 # Define C++ warning options here
-CPPWARN = -Wall -Wextra
+CPPWARN = -Wall -Wextra -Wundef
 
 #
 # Compiler settings
@@ -194,4 +273,11 @@ ULIBS =
 # End of user defines
 ##############################################################################
 
-include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
+RULESPATH = $(CHIBIOS)/os/common/startup/ARM/compilers/GCC
+include $(RULESPATH)/rules.mk
+
+##############################################################################
+# MISRA check rule, requires PCLint and the setup files, not provided.
+#
+misra:
+	@lint-nt -v -w3 $(DEFS) pclint/co-gcc.lnt pclint/au-misra3.lnt pclint/waivers.lnt $(IINCDIR) $(CSRC) &> misra.txt

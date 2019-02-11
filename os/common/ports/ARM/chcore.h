@@ -93,6 +93,7 @@
  */
 #define ARM_CORE_ARM7TDMI               7
 #define ARM_CORE_ARM9                   9
+#define ARM_CORE_ARM1176                11
 #define ARM_CORE_CORTEX_A5              105
 #define ARM_CORE_CORTEX_A7              107
 #define ARM_CORE_CORTEX_A8              108
@@ -172,6 +173,11 @@
 #define PORT_ARCHITECTURE_ARM_ARM9
 #define PORT_ARCHITECTURE_NAME          "ARMv5T"
 #define PORT_CORE_VARIANT_NAME          "ARM9"
+
+#elif ARM_CORE == ARM_CORE_ARM1176
+#define PORT_ARCHITECTURE_ARM_ARM1176
+#define PORT_ARCHITECTURE_NAME          "ARMv6T"
+#define PORT_CORE_VARIANT_NAME          "ARM11"
 
 #elif ARM_CORE == ARM_CORE_CORTEX_A5
 #define PORT_ARCHITECTURE_ARM_CORTEXA5

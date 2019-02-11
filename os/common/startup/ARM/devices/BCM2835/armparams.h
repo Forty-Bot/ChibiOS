@@ -35,15 +35,33 @@
 /**
  * @brief   ARM core model.
  */
-#define ARM_CORE                ARM_CORE_ARM1176JZF_S
+#define ARM_CORE                ARM_CORE_ARM1176
+
+/**
+ * @brief   Thumb-capable.
+ */
+#define ARM_SUPPORTS_THUMB      1
+
+/**
+ * @brief   Thumb2-capable.
+ */
+#define ARM_SUPPORTS_THUMB2     1
 
 /**
  * @brief   BCM2835-specific wait for interrupt.
  */
-#define port_wait_for_interrupt() {                               \
-  asm volatile ("MCR p15,0,r0,c7,c0,4" : : : "memory");           \
-}
-  
+#define ARM_WFI_IMPL \
+	asm volatile ("MCR p15,0,r0,c7,c0,4" : : : "memory")
+
+#if !defined(_FROM_ASM_) || defined(__DOXYGEN__)
+/**
+ * @brief   Address of the IRQ vector register in the interrupt controller.
+ */
+#define ARM_IRQ_VECTOR_REG      0xFFFF0018U
+#else
+#define ARM_IRQ_VECTOR_REG      0xFFFF0018
+#endif
+ 
 #endif /* _ARMPARAMS_H_ */
 
 /** @} */
